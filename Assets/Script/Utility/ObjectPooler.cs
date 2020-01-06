@@ -1,10 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public static class ObjectPooler {
     static Dictionary<int, List<GameObject>> dictionaryOfPooledObjects = new Dictionary<int, List<GameObject>> ();
 
+    public static Dictionary<int, List<GameObject>> ObjectPoolerInventory => dictionaryOfPooledObjects;
     public static void PoolObject (GameObject desiredObject, int amount, Transform parent) {
         List<GameObject> tempPooledObjectList = new List<GameObject> ();
         for (int i = 0; i < amount; i++) {
@@ -31,6 +33,19 @@ public static class ObjectPooler {
         dictionaryOfPooledObjects.TryGetValue (desiredObject, out desiredPooledObjects);
         for (int i = 0; i < desiredPooledObjects.Count; i++) {
             if (!desiredPooledObjects[i].activeInHierarchy) return desiredPooledObjects[i];
+        }
+
+        return null;
+    }
+
+    public static T GetPooledObject<T> () where T : Component {
+        foreach (var list in from KeyValuePair<int, List<GameObject>> list in dictionaryOfPooledObjects
+            where list.Value[0].GetComponent<T> () != null select list) {
+            for (int a = 0; a < list.Value.Count; a++) {
+                if (!list.Value[a].activeInHierarchy) return list.Value[a].GetComponent<T> ();
+            }
+
+            break;
         }
 
         return null;

@@ -1,87 +1,65 @@
-﻿using System.Linq;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using System;
 
-public class OffensivePlayerSystems : MonoBehaviour
-{
+public class OffensivePlayerSystems : MonoBehaviour {
     //What does this class do?
 
     //TODO  Basic projectile shooting
-    //TODO  Object Pooler for projectile shooting
+    //TODO  Weapon Collection/Assignment
     //TODO  Projectile definitions (like who fired it, what behaivour does the projectile do, etc.)
-
 
     public GameObject indicatorPrefab;
 
-    //This class is where player input translates into logic (i.e. aiming)
+    public WeaponHolder weaponHolder;
 
+    AimingLogic aim;
 
+    private void Awake () {
+        weaponHolder = new WeaponHolder (this);
+        aim = new AimingLogic ();
+        aim.AffectGameObject (GameObject.Find (indicatorPrefab.name));
 
-   AimingLogic aim;
-    private void Awake() {
-        aim = new AimingLogic(gameObject);
-        aim.AffectGameObject(GameObject.Find(indicatorPrefab.name));
     }
 
-    private void Update() {
-        aim.TowardsCursor(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+    private void Update () {
+        indicatorPrefab.gameObject.SetActive (weaponHolder.WeaponInventory.Count != 0);
+        if (indicatorPrefab.activeInHierarchy)
+            aim.TowardsCursor (Camera.main.ScreenToWorldPoint (Input.mousePosition), transform.position);
+        if (Input.GetMouseButton (0))
+            weaponHolder.TriggerAttackFunction (gameObject, indicatorPrefab.transform.GetChild (0));
+
     }
-
-
-
 
 }
 
-
-
 public class AimingLogic {
 
+    List<GameObject> listOfGameObjects = new List<GameObject> ();
 
-   
-    Transform transform;
-    Quaternion rotation;
-    Vector2 position;
+    public bool SystemDisabled { private get; set; }
 
-
-    List<GameObject> listOfGameObjects = new List<GameObject>();
-
-
-    public bool SystemDisabled {private get; set;}
-
-    public void AffectGameObject(GameObject gameObject){
-        if(listOfGameObjects.Contains(gameObject)) return;
-        listOfGameObjects.Add(gameObject);
+    public void AffectGameObject (GameObject gameObject) {
+        if (listOfGameObjects.Contains (gameObject)) return;
+        listOfGameObjects.Add (gameObject);
     }
 
-    public void ResetGameObject(GameObject gameObject){
-        listOfGameObjects.Remove(gameObject);
+    public void ResetGameObject (GameObject gameObject) {
+        listOfGameObjects.Remove (gameObject);
     }
 
- 
-
-    public AimingLogic(GameObject _gameObject){
-       
-        transform = _gameObject.transform;
-        position = new Vector2(transform.position.x, transform.position.y);
-        
-            
-    }
-    public Vector2 TowardsCursor(Vector2 mousePosition){
-        if(listOfGameObjects.Count == 0 || !Array.Find(GameObject.FindObjectsOfType<GameObject>(), p => p == listOfGameObjects[UnityEngine.Random.Range(0, listOfGameObjects.Count)])) throw new NullReferenceException("Prefab missing in the scene.");
-        Vector2 direction = -(position - mousePosition).normalized;
-         if(SystemDisabled) return direction;
-        for (int i = 0; i < listOfGameObjects.Count; i++)
-        {
+    public Vector2 TowardsCursor (Vector2 mousePosition, Vector2 ownerPosition) {
+        if (listOfGameObjects.Count == 0 || !Array.Find (GameObject.FindObjectsOfType<GameObject> (), p => p == listOfGameObjects[UnityEngine.Random.Range (0, listOfGameObjects.Count)])) throw new NullReferenceException ("Prefab missing in the scene.");
+        Vector2 direction = -(ownerPosition - mousePosition);
+        if (SystemDisabled) return direction;
+        for (int i = 0; i < listOfGameObjects.Count; i++) {
             GameObject obj = listOfGameObjects[i];
-            obj.transform.rotation = Quaternion.LookRotation(Vector3.forward, direction);
+            obj.transform.rotation = Quaternion.LookRotation (Vector3.forward, direction);
         }
-
 
         return direction;
     }
-
-    
 
 }
